@@ -1480,6 +1480,9 @@ Given /^I switch the ovn gateway mode on this cluster$/ do
     @result = admin.cli_exec(:patch, resource: "network.operator", resource_name: "cluster", p: "{\"spec\":{\"defaultNetwork\":{\"ovnKubernetesConfig\":{\"gatewayConfig\":{\"routingViaHost\": true}}}}}", type: "merge")
   end
   raise "Failed to patch network operator for gateway mode" unless @result[:success]
+  # Sometimes CNO starts rolling out changes after few seconds have passed (gap). During that gap, if we check rollout status it would always be a pass from previous rollout result.Its not a bug.
+  # Keeping a 30 seconds harcoded time before we make following instruction (oc rollout status) worthy
+  step "30 seconds have passed"
   @result = admin.cli_exec(:rollout_status, resource: "daemonset", name: "ovnkube-master", n: "openshift-ovn-kubernetes")
   raise "Failed to rollout masters" unless @result[:success]
 end
