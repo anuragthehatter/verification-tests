@@ -985,6 +985,8 @@ Given /^the vxlan tunnel address of node "([^"]*)" is stored in the#{OPT_SYM} cl
   logger.info "The tunnel interface address is stored in the #{cb_address} clipboard."
 end
 
+# Internal IP will support single stack clusters either IPv4 or IPv6. Internal IPv6 will return in case cluster in Dual Stack. We shouldn't be worried about dual stack enhancement here as its being covered in GO
+# This is more focussed on supporting single stack clustersi and interoperability of such cases in verification-tests repo
 Given /^the Internal IP(v6)? of node "([^"]*)" is stored in the#{OPT_SYM} clipboard$/ do | v6, node_name, cb_ipaddr|
   ensure_admin_tagged
   node = node(node_name)
@@ -998,24 +1000,24 @@ Given /^the Internal IP(v6)? of node "([^"]*)" is stored in the#{OPT_SYM} clipbo
     if v6
        step %Q/I run command on the node's ovnkube pod:/, table("| ip | -6 | route | show | default |")
     else
-       step %Q/I run command on the node's ovnkube pod:/, table("| ip | -4 | route | show | default |")
+       inf_address = admin.cli_exec(:get, resource: "node/#{node_name}", output: "jsonpath={.status.addresses[0].address}")
+       #step %Q/I run command on the node's ovnkube pod:/, table("| ip | -4 | route | show | default |")
     end
   when "OpenShiftSDN"
-    step %Q/I run command on the node's sdn pod:/, table("| ip | -4 | route | show | default |")
+       inf_address = _admin.cli_exec(:get, resource: "node/#{node_name}", output: "jsonpath={.status.addresses[0].address}")
   else
     logger.info "unknown networkType"
     skip_this_scenario
   end
   # OVN uses `br-ex` and `-` is not a word char, so we have to split on whitespace
-  def_inf = @result[:response].split("\n").first.split[4]
-  logger.info "The node's default interface is #{def_inf}"
-  if v6
-     @result = host.exec_admin("ip -6 -brief addr show #{def_inf}")
-     cb[cb_ipaddr]=@result[:response].match(/([a-f0-9:]+:+)+[a-f0-9]+/)[0]
-  else
-     @result = host.exec_admin("ip -4 -brief addr show #{def_inf}")
-     cb[cb_ipaddr]=@result[:response].match(/\d{1,3}\.\d{1,3}.\d{1,3}.\d{1,3}/)[0]
-  end
+    if v6 
+       def_inf = @result[:response].split("\n").first.split[4]
+       logger.info "The node's default interface is #{def_inf}"
+       @result = host.exec_admin("ip -6 -brief addr show #{def_inf}")
+       cb[cb_ipaddr]=@result[:response].match(/([a-f0-9:]+:+)+[a-f0-9]+/)[0]
+    else
+       cb[cb_ipaddr]=inf_address[:response]
+    end
   logger.info "The Internal IP of node is stored in the #{cb_ipaddr} clipboard."
 end
 
