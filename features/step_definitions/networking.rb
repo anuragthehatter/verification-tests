@@ -1004,7 +1004,7 @@ Given /^the Internal IP(v6)? of node "([^"]*)" is stored in the#{OPT_SYM} clipbo
        #step %Q/I run command on the node's ovnkube pod:/, table("| ip | -4 | route | show | default |")
     end
   when "OpenShiftSDN"
-       inf_address = _admin.cli_exec(:get, resource: "node/#{node_name}", output: "jsonpath={.status.addresses[0].address}")
+       inf_address = admin.cli_exec(:get, resource: "node/#{node_name}", output: "jsonpath={.status.addresses[0].address}")
   else
     logger.info "unknown networkType"
     skip_this_scenario
